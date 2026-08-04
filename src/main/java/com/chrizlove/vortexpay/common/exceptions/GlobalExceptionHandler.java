@@ -36,6 +36,16 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.error("VALIDATION_FAILED", "Request validation failed", fieldErrors));
     }
 
+    @ExceptionHandler(RateLimitException.class)
+    public ResponseEntity<ErrorResponse> handleRateLimitException(RateLimitException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).
+                header("X-RateLimit-Remaining", "0").
+                header("Retry-After", String.valueOf(ex.getRetryAfterSeconds())).
+                header("X-RateLimit-Reset", String.valueOf(
+                        Instant.now().plusSeconds(ex.getRetryAfterSeconds()).getEpochSecond())).
+                body(ErrorResponse.error("RATE_LIMIT_EXCEEDED", ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAllUncaughtExceptions(Exception ex, HttpServletRequest request) {
         log.error("Uncaught exception on endpoint: " + request.getRequestURI(), ex);

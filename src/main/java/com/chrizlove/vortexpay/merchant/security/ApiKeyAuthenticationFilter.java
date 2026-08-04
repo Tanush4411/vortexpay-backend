@@ -1,5 +1,8 @@
 package com.chrizlove.vortexpay.merchant.security;
 
+import com.chrizlove.vortexpay.common.exceptions.RateLimitException;
+import com.chrizlove.vortexpay.common.ratelimit.RateLimitResult;
+import com.chrizlove.vortexpay.common.ratelimit.RateLimiter;
 import com.chrizlove.vortexpay.merchant.cache.ApiKeyCache;
 import com.chrizlove.vortexpay.merchant.cache.ApiKeyCacheEntry;
 import com.chrizlove.vortexpay.merchant.entity.ApiKey;
@@ -36,6 +39,10 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     private final MerchantContext merchantContext;
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final ApiKeyCache apiKeyCache;
+    private final RateLimiter rateLimiter;
+
+    @Value("${app.rate-limit.use-case.api-key.request-per-minute: 60}")
+    private Integer requestsPerMinute;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -64,7 +71,16 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
                 throw new BadRequestException("API Key is disabled or invalid");
             }
 
-            //TODO: Rate limiting
+            //Rate limiting of api key requests per merchant
+            RateLimitResult rateLimitResult=rateLimiter.check("apikey:"+keyId, requestsPerMinute, 60);
+
+            if(!rateLimitResult.isAllowed()){
+                log.warn("Too many requests on API Key: {}", keyId);
+                throw new RateLimitException("Too many requests", rateLimitResult.retryAfterSeconds());
+            }
+
+            response.setHeader("X-RateLimit-Limit",String.valueOf(requestsPerMinute));
+            response.setHeader("X-RateLimit-Remaining",String.valueOf(rateLimitResult.remaining()));
 
             var auth = new UsernamePasswordAuthenticationToken(keyId, null,
                     List.of(new SimpleGrantedAuthority("API_KEY_ROLE"))
