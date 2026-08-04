@@ -1,6 +1,5 @@
 package com.chrizlove.vortexpay.payment.service.impl;
 
-import com.chrizlove.vortexpay.common.enums.EventAggregateType;
 import com.chrizlove.vortexpay.common.enums.OrderStatus;
 import com.chrizlove.vortexpay.common.enums.PaymentEvent;
 import com.chrizlove.vortexpay.common.enums.PaymentStatus;
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -74,7 +72,6 @@ public class PaymentServiceImpl implements PaymentService {
         switch (result){
             case PaymentResult.Pending pending-> payment.setProcessorReference(pending.registrationRef());
             case PaymentResult.Failure failure-> {
-                //payment.setPaymentStatus(PaymentStatus.FAILED);
                 paymentTransitionService.apply(payment, PaymentEvent.AUTHORIZE_FAIL);
                 payment.setErrorCode(failure.errorCode());
                 payment.setErrorDescription(failure.errorDescription());
@@ -95,9 +92,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse capture(UUID merchantId, UUID paymentId) {
-
-//        Payment payment=paymentRepository.findByIdAndMerchantId(paymentId, merchantId).
-//                orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
 
         //pessimistic locking
         Payment payment=paymentRepository.findByIdAndMerchantIdForUpdate(paymentId, merchantId).
@@ -128,9 +122,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public void resolveAuthorization(UUID paymentId, boolean approve, String bankRef, String errorCode, String errorDescription) {
-
-//        Payment payment=paymentRepository.findById(paymentId).
-//                orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
 
         //pessimistic locking
         Payment payment=paymentRepository.findByIdForUpdate(paymentId).

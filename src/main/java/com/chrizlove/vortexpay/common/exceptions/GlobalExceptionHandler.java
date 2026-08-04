@@ -35,4 +35,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.error("VALIDATION_FAILED", "Request validation failed", fieldErrors));
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleAllUncaughtExceptions(Exception ex, HttpServletRequest request) {
+        log.error("Uncaught exception on endpoint: " + request.getRequestURI(), ex);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.error("INTERNAL_SERVER_ERROR", ex.getMessage()));
+    }
 }

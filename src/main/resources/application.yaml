@@ -16,6 +16,9 @@ spring:
 jwt:
   secret-key: sadanodiasdasndiasndfuabsfasnfuasifafubasyfa87f98fhadd89yasmd7asdh7a
 
+vault:
+  master-key: T22MK14anT98i0ouHQ88W5qOf21cSzouHQ+ejXxre0s=
+
 payment:
   simulator:
     poll-interval-ms: 5000
