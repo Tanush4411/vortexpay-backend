@@ -1,5 +1,7 @@
 package com.chrizlove.vortexpay.merchant.security;
 
+import com.chrizlove.vortexpay.merchant.cache.ApiKeyCache;
+import com.chrizlove.vortexpay.merchant.cache.ApiKeyCacheEntry;
 import com.chrizlove.vortexpay.merchant.entity.ApiKey;
 import com.chrizlove.vortexpay.merchant.repository.ApiKeyRepository;
 import jakarta.servlet.FilterChain;
@@ -33,6 +35,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     private final BCryptPasswordEncoder BCRYPT = new BCryptPasswordEncoder();
     private final MerchantContext merchantContext;
     private final HandlerExceptionResolver handlerExceptionResolver;
+    private final ApiKeyCache apiKeyCache;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -55,20 +58,20 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
             String keyId = credentials[0];
             String rawSecret = credentials[1];
 
-            // Direct DB lookup for base security commit
-            ApiKey apiKey = apiKeyRepository.findByKeyId(keyId)
-                    .orElseThrow(() -> new BadRequestException("API Key is disabled or invalid"));
+            ApiKeyCacheEntry apiKeyEntry=apiKeyCache.get(keyId).orElseGet(()-> loadAndCache(keyId));
 
-            if (!apiKey.isEnabled() || !secretMatches(rawSecret, apiKey)) {
+            if (apiKeyEntry==null || !apiKeyEntry.enabled() || !secretMatches(rawSecret, apiKeyEntry)) {
                 throw new BadRequestException("API Key is disabled or invalid");
             }
+
+            //TODO: Rate limiting
 
             var auth = new UsernamePasswordAuthenticationToken(keyId, null,
                     List.of(new SimpleGrantedAuthority("API_KEY_ROLE"))
             );
             SecurityContextHolder.getContext().setAuthentication(auth);
-            merchantContext.setMerchantId(apiKey.getMerchant().getId());
-            merchantContext.setKeyId(apiKey.getKeyId());
+            merchantContext.setMerchantId(apiKeyEntry.merchantId());
+            merchantContext.setKeyId(apiKeyEntry.keyId());
 
             filterChain.doFilter(request, response);
 
@@ -77,20 +80,30 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-    private boolean secretMatches(String rawSecret, ApiKey apiKey) {
-        if (BCRYPT.matches(rawSecret, apiKey.getKeySecretHash())) {
-            return true;
-        }
-        return apiKey.isInGracePeriod() && apiKey.getPreviousKeySecretHash() != null
-                && BCRYPT.matches(rawSecret, apiKey.getPreviousKeySecretHash());
+    private ApiKeyCacheEntry loadAndCache(String keyId) {
+        log.info("Loading and caching API Key: {}", keyId);
+        ApiKey apiKey = apiKeyRepository.findByKeyId(keyId).orElse(null);
+        if(apiKey==null) return null;
+        ApiKeyCacheEntry apiKeyCacheEntry=new ApiKeyCacheEntry(apiKey.getKeyId(),apiKey.getKeySecretHash()
+                ,apiKey.getPreviousKeySecretHash(),apiKey.getGracePeriodExpiresAt()
+                ,apiKey.getMerchant().getId(),apiKey.getApiEnvironment(),apiKey.isEnabled());
+        apiKeyCache.put(keyId,apiKeyCacheEntry);
+        return apiKeyCacheEntry;
     }
 
-    private String[] decode(String header) {
-        String encoded = header.substring(BASIC_PREFIX.length());
-        String decoded = new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+    private boolean secretMatches(String rawSecret,ApiKeyCacheEntry apiKey){
+        if(BCRYPT.matches(rawSecret,apiKey.keySecretHash())){
+            return true;
+        }
+        return apiKey.isInGracePeriod() && apiKey.previousKeySecretHash()!=null
+                && BCRYPT.matches(rawSecret,apiKey.previousKeySecretHash());
+    }
 
-        int colon = decoded.indexOf(':');
-        if (colon < 1) return null;
-        return new String[]{decoded.substring(0, colon), decoded.substring(colon + 1)};
+    private String[] decode(String header){
+        String encoded=header.substring(BASIC_PREFIX.length());
+        String decoded=new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+        int colon=decoded.indexOf(':');
+        if(colon<1) return null;
+        return new String[]{decoded.substring(0, colon), decoded.substring(colon+1)};
     }
 }

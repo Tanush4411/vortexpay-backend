@@ -25,4 +25,14 @@ public class GlobalExceptionHandler {
         String errorCode=ex.getResourceName().toUpperCase()+"_NOT_FOUND";
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse.error(errorCode, ex.getMessage()));
     }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        List<ErrorResponse.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> new ErrorResponse.FieldError(fe.getField(), fe.getDefaultMessage()))
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.error("VALIDATION_FAILED", "Request validation failed", fieldErrors));
+    }
 }

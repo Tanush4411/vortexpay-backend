@@ -2,6 +2,7 @@ package com.chrizlove.vortexpay.merchant.service.implementations;
 
 import com.chrizlove.vortexpay.common.exceptions.ResourceNotFoundException;
 import com.chrizlove.vortexpay.common.utils.RandomizerUtil;
+import com.chrizlove.vortexpay.merchant.cache.ApiKeyCache;
 import com.chrizlove.vortexpay.merchant.dto.Request.CreateApiKeyRequest;
 import com.chrizlove.vortexpay.merchant.dto.Response.ApiKeyCreateResponse;
 import com.chrizlove.vortexpay.merchant.dto.Response.ApiKeyResponse;
@@ -27,12 +28,11 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class ApiKeyServiceImpl implements ApiKeyService {
 
-    // TODO: Do caching
-
     private final MerchantRepository merchantRepository;
     private final ApiKeyRepository apiKeyRepository;
     private final ApiKeyMapper apiKeyMapper;
     private final BCryptPasswordEncoder BCRYPT = new BCryptPasswordEncoder();
+    private final ApiKeyCache apiKeyCache;
 
     @Override
     @Transactional
@@ -69,7 +69,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
                 filter(key -> key.getMerchant().getId().equals(merchantId)).
                 orElseThrow(()-> new ResourceNotFoundException("ApiKey",keyId));
         apiKey.setEnabled(false);
-        // TODO: Evict apiKey cache
+        apiKeyCache.evict(apiKey.getKeyId());
         apiKeyRepository.save(apiKey);
     }
 
@@ -91,7 +91,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         apiKey.setRotatedAt(LocalDateTime.now());
         apiKey.setGracePeriodExpiresAt(LocalDateTime.now().plusHours(24));
         apiKey = apiKeyRepository.save(apiKey);
-        // TODO: Evict apiKey cache
+        apiKeyCache.evict(apiKey.getKeyId());
         return new ApiKeyCreateResponse(apiKey.getId(), apiKey.getKeyId(), apiKey.getKeySecretHash(), apiKey.getApiEnvironment());
     }
 }
