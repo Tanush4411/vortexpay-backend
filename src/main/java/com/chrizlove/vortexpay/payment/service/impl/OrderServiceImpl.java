@@ -13,6 +13,7 @@ import com.chrizlove.vortexpay.payment.entity.OrderRecord;
 import com.chrizlove.vortexpay.payment.entity.Payment;
 import com.chrizlove.vortexpay.payment.mapper.OrderMapper;
 import com.chrizlove.vortexpay.payment.mapper.PaymentMapper;
+import com.chrizlove.vortexpay.payment.outbox.OutboxEventPublisher;
 import com.chrizlove.vortexpay.payment.repository.OrderRepository;
 import com.chrizlove.vortexpay.payment.repository.PaymentRepository;
 import com.chrizlove.vortexpay.payment.service.OrderService;
@@ -38,6 +39,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentMapper paymentMapper;
     private final OrderMapper orderMapper;
     private final CustomerService customerService;
+    private final OutboxEventPublisher eventPublisher;
 
     @Value("${payment.order.default-order-expiry-minutes:30}")
     private int defaultOrderExpiryMinutes;
@@ -67,7 +69,14 @@ public class OrderServiceImpl implements OrderService {
 
         orderRecord = orderRepository.save(orderRecord);
 
-        //TODO: Send kafka outbox event to db
+        //pushing the kafka event to our db
+        eventPublisher.publish(EventAggregateType.ORDER,orderRecord.getOrderId(),"ORDER_CREATED",
+                Map.of("orderId",orderRecord.getOrderId(),
+                        "merchantId",orderRecord.getMerchantId().toString(),
+                        "orderStatus", orderRecord.getOrderStatus().name(),
+                        "amountUnits",orderRecord.getAmount().getAmountUnits(),
+                        "amountCurrency",orderRecord.getAmount().getCurrency())
+        );
 
         return orderMapper.toOrderResponse(orderRecord);
     }
@@ -88,7 +97,14 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(OrderStatus.CANCELED);
         orderRepository.save(order);
 
-        //TODO: Send kafka outbox event to db
+        //pushing the kafka event to our db
+        eventPublisher.publish(EventAggregateType.ORDER,order.getOrderId(),"ORDER_CANCELLED",
+                Map.of("orderId",order.getOrderId(),
+                        "merchantId",order.getMerchantId().toString(),
+                        "orderStatus", order.getOrderStatus().name(),
+                        "amountUnits",order.getAmount().getAmountUnits(),
+                        "amountCurrency",order.getAmount().getCurrency())
+        );
 
        return orderMapper.toOrderResponse(order);
     }

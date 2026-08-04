@@ -1,5 +1,6 @@
 package com.chrizlove.vortexpay.payment.service.impl;
 
+import com.chrizlove.vortexpay.common.enums.EventAggregateType;
 import com.chrizlove.vortexpay.common.enums.OrderStatus;
 import com.chrizlove.vortexpay.common.enums.PaymentEvent;
 import com.chrizlove.vortexpay.common.enums.PaymentStatus;
@@ -13,6 +14,7 @@ import com.chrizlove.vortexpay.payment.gateway.PaymentGatewayRouter;
 import com.chrizlove.vortexpay.payment.gateway.dto.PaymentRequest;
 import com.chrizlove.vortexpay.payment.gateway.dto.PaymentResult;
 import com.chrizlove.vortexpay.payment.mapper.PaymentMapper;
+import com.chrizlove.vortexpay.payment.outbox.OutboxEventPublisher;
 import com.chrizlove.vortexpay.payment.repository.OrderRepository;
 import com.chrizlove.vortexpay.payment.repository.PaymentRepository;
 import com.chrizlove.vortexpay.payment.service.PaymentService;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -35,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentGatewayRouter paymentGatewayRouter;
     private final PaymentMapper paymentMapper;
     private final PaymentTransitionService paymentTransitionService;
+    private final OutboxEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -84,7 +88,16 @@ public class PaymentServiceImpl implements PaymentService {
         payment= paymentRepository.save(payment);
         orderRepository.save(order);
 
-        //TODO: Send kafka outbox event to db
+        //pushing the kafka event to our db
+        eventPublisher.publish(EventAggregateType.PAYMENT,payment.getId(),"PAYMENT_CREATED",
+                Map.of("orderId",order.getOrderId().toString(),
+                        "paymentId", payment.getId().toString(),
+                        "merchantId",order.getMerchantId().toString(),
+                        "paymentStatus", payment.getPaymentStatus().name(),
+                        "amountUnits",order.getAmount().getAmountUnits(),
+                        "amountCurrency",order.getAmount().getCurrency(),
+                        "method", payment.getPaymentMethod().name())
+        );
 
         return paymentMapper.toResponse(payment);
     }
@@ -114,7 +127,16 @@ public class PaymentServiceImpl implements PaymentService {
         }
         payment= paymentRepository.save(payment);
 
-        //TODO: Send kafka outbox event to db
+        //pushing the kafka event to our db
+        eventPublisher.publish(EventAggregateType.PAYMENT,payment.getId(),"PAYMENT_STATUS_CHANGED",
+                Map.of("orderId",payment.getOrderRecord().getOrderId().toString(),
+                        "paymentId", payment.getId().toString(),
+                        "merchantId",payment.getMerchantId().toString(),
+                        "paymentStatus", payment.getPaymentStatus().name(),
+                        "amountUnits",payment.getAmount().getAmountUnits(),
+                        "amountCurrency",payment.getAmount().getCurrency(),
+                        "method", payment.getPaymentMethod().name())
+        );
 
         return paymentMapper.toResponse(payment);
     }
@@ -162,6 +184,15 @@ public class PaymentServiceImpl implements PaymentService {
         paymentRepository.save(payment);
         orderRepository.save(order);
 
-        //TODO: Send kafka outbox event to db
+        //pushing the kafka event to our db
+        eventPublisher.publish(EventAggregateType.PAYMENT,payment.getId(),"PAYMENT_STATUS_CHANGED",
+                Map.of("orderId",payment.getOrderRecord().getOrderId().toString(),
+                        "paymentId", payment.getId().toString(),
+                        "merchantId",payment.getMerchantId().toString(),
+                        "paymentStatus", payment.getPaymentStatus().name(),
+                        "amountUnits",payment.getAmount().getAmountUnits(),
+                        "amountCurrency",payment.getAmount().getCurrency(),
+                        "method", payment.getPaymentMethod())
+        );
     }
 }
