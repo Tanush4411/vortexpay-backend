@@ -21,10 +21,10 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     List<Payment> findByPaymentStatusAndCreatedAtBefore(PaymentStatus paymentStatus, LocalDateTime globalWindow);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from Payment p where p.id = : paymentId and p.merchantId = :merchantId")
+    @Query("select p from Payment p where p.id = :paymentId and p.merchantId = :merchantId")
     Optional<Payment> findByIdAndMerchantIdForUpdate(UUID paymentId, UUID merchantId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from Payment p where p.id = : paymentId")
+    @Query("select p from Payment p where p.id = :paymentId")
     Optional<Payment> findByIdForUpdate(UUID paymentId);
 }
