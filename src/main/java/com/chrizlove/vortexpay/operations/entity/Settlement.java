@@ -4,12 +4,18 @@ import com.chrizlove.vortexpay.common.entity.BaseEntity;
 import com.chrizlove.vortexpay.common.entity.Money;
 import com.chrizlove.vortexpay.common.enums.SettlementStatus;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name="settlements")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Settlement extends BaseEntity {
 
     @Id

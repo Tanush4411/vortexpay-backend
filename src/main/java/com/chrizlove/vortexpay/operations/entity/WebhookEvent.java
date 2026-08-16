@@ -3,6 +3,7 @@ package com.chrizlove.vortexpay.operations.entity;
 import com.chrizlove.vortexpay.common.entity.BaseEntity;
 import com.chrizlove.vortexpay.common.enums.WebhookEventStatus;
 import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -12,6 +13,11 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "webhook_event")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WebhookEvent extends BaseEntity {
 
     @Id
@@ -39,7 +45,8 @@ public class WebhookEvent extends BaseEntity {
     private WebhookEventStatus webhookEventStatus;
 
     @Column(nullable = false)
-    private Integer attempts;
+    @Builder.Default
+    private Integer attempts=0;
 
     private LocalDateTime nextRetryAt;
 

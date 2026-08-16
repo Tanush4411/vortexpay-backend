@@ -1,6 +1,7 @@
 package com.chrizlove.vortexpay.operations.entity;
 
 import jakarta.persistence.Embeddable;
+import lombok.*;
 
 import java.util.UUID;
 
