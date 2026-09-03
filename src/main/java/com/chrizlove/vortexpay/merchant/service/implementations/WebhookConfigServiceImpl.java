@@ -1,9 +1,10 @@
 package com.chrizlove.vortexpay.merchant.service.implementations;
 
 import com.chrizlove.vortexpay.common.dto.WebhookTarget;
+import com.chrizlove.vortexpay.common.enums.MerchantStatus;
 import com.chrizlove.vortexpay.common.exceptions.ResourceNotFoundException;
 import com.chrizlove.vortexpay.common.utils.RandomizerUtil;
-import com.chrizlove.vortexpay.merchant.api.MerchantWebhookApi;
+import com.chrizlove.vortexpay.merchant.api.MerchantLookupService;
 import com.chrizlove.vortexpay.merchant.dto.Request.UpdateWebhookConfigRequest;
 import com.chrizlove.vortexpay.merchant.dto.Response.WebhookConfigResponse;
 import com.chrizlove.vortexpay.merchant.entity.Merchant;
@@ -26,7 +27,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WebhookConfigServiceImpl implements WebhookConfigService, MerchantWebhookApi {
+public class WebhookConfigServiceImpl implements WebhookConfigService, MerchantLookupService {
 
     private final WebhookConfigRepository webhookConfigRepository;
     private final MerchantRepository merchantRepository;
@@ -102,5 +103,11 @@ public class WebhookConfigServiceImpl implements WebhookConfigService, MerchantW
                     return new WebhookTarget(webhookConfig.getId(), webhookConfig.getTargetUrl(),
                             new String(decryptedSecretBytes, StandardCharsets.UTF_8));
                 }).toList();
+    }
+
+    @Override
+    public List<UUID> listActiveMerchantIds() {
+        return merchantRepository.findByMerchantStatus(MerchantStatus.ACTIVE)
+                .stream().map(m->m.getId()).toList();
     }
 }

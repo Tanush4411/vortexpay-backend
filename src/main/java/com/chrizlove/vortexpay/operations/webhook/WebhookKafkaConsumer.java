@@ -3,10 +3,9 @@ package com.chrizlove.vortexpay.operations.webhook;
 import com.chrizlove.vortexpay.common.dto.WebhookTarget;
 import com.chrizlove.vortexpay.common.enums.WebhookEventStatus;
 import com.chrizlove.vortexpay.common.utils.SignerUtil;
-import com.chrizlove.vortexpay.merchant.api.MerchantWebhookApi;
+import com.chrizlove.vortexpay.merchant.api.MerchantLookupService;
 import com.chrizlove.vortexpay.operations.entity.WebhookEvent;
 import com.chrizlove.vortexpay.operations.repository.WebhookEventRepository;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -27,7 +26,7 @@ import java.util.UUID;
 @Slf4j
 public class WebhookKafkaConsumer {
 
-    private final MerchantWebhookApi merchantWebhookApi;
+    private final MerchantLookupService merchantLookupService;
     private final ObjectMapper objectMapper;
     private final SignerUtil signerUtil;
     private final WebhookEventRepository webhookEventRepository;
@@ -55,7 +54,7 @@ public class WebhookKafkaConsumer {
             }
             UUID merchantId = UUID.fromString(merchantIdRaw.toString());
 
-            List<WebhookTarget> targets = merchantWebhookApi.getActiveConfigsForEvent(merchantId, eventType);
+            List<WebhookTarget> targets = merchantLookupService.getActiveConfigsForEvent(merchantId, eventType);
 
             //If no targets for this particular eventType, then just skip
             if (targets.isEmpty()) {

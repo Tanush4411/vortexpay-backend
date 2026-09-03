@@ -35,10 +35,9 @@ spring:
         spring.json.trusted.packages: "com.chrizlove.vortexpay.*"
         spring.json.use.type.headers: false
         spring.json.value.default.type: java.util.LinkedHashMap
-
-threads:
-  virtual:
-    enabled: true
+  threads:
+    virtual:
+      enabled: true
 
 jwt:
   secret-key: sadanodiasdasndiasndfuabsfasnfuasifafubasyfa87f98fhadd89yasmd7asdh7a
