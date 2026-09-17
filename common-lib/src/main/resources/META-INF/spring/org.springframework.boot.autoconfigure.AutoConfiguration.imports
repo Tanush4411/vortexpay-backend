@@ -1,0 +1,6 @@
+com.chrizlove.vortexpay.common_lib.config.SharedKafkaAutoConfiguration
+com.chrizlove.vortexpay.common_lib.audit.SharedAuditAutoConfiguration
+com.chrizlove.vortexpay.common_lib.web.SharedWebFilterAutoConfiguration
+com.chrizlove.vortexpay.common_lib.idempotency.SharedResilienceAutoConfiguration
+com.chrizlove.vortexpay.common_lib.exceptions.SharedExceptionAutoConfiguration
+com.chrizlove.vortexpay.common_lib.utils.SharedSecurityAutoConfiguration

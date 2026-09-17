@@ -1,9 +1,0 @@
-package com.chrizlove.vortexpay.payment.repository;
-
-import com.chrizlove.vortexpay.payment.entity.PaymentTransitionLog;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.UUID;
-
-public interface PaymentTransitionLogRepository extends JpaRepository<PaymentTransitionLog, UUID> {
-}

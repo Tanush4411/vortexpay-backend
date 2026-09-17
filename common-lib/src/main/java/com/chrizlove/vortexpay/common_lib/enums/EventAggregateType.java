@@ -1,0 +1,8 @@
+package com.chrizlove.vortexpay.common_lib.enums;
+
+public enum EventAggregateType {
+    PAYMENT,
+    ORDER,
+    REFUND,
+    SETTLEMENT
+}
