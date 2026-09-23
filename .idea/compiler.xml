@@ -20,8 +20,10 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
+        <module name="operations-service" />
+        <module name="vault-service" />
+        <module name="common-lib" />
         <module name="api-gateway-service" />
       </profile>
       <profile name="Maven default annotation processors profile" enabled="true">
@@ -42,17 +44,6 @@
         </processorPath>
         <module name="merchant-service" />
         <module name="payment-service" />
-      </profile>
-      <profile name="Annotation profile for vault-service" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
-        <module name="vault-service" />
-        <module name="operations-service" />
-        <module name="common-lib" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

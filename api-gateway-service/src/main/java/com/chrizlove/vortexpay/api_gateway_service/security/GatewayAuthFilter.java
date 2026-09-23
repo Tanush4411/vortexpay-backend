@@ -40,6 +40,7 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
         log.info("Incoming request: {}", request.getRequestURI());
 
         if (publicRouteMatcher.isPublic(request.getRequestURI())) {
+            log.info("Public route matched: {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }

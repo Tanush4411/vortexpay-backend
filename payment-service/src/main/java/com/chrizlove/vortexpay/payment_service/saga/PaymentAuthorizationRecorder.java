@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -36,7 +37,7 @@ public class PaymentAuthorizationRecorder {
     private final OutboxEventPublisher eventPublisher;
 
     @Transactional
-    public Payment recordPayment(UUID merchantId, PaymentInitRequest request) {
+    public Payment recordPayment(UUID merchantId, PaymentInitRequest request, String idempotencyKey) {
 
         //does pessimistic locking so that until a thread is done executing, another thread cant even
         //read the data
@@ -54,7 +55,7 @@ public class PaymentAuthorizationRecorder {
                 orderRecord(order).
                 merchantId(merchantId).
                 amount(order.getAmount()).
-                idempotencyKey(UUID.randomUUID().toString()).
+                idempotencyKey(idempotencyKey!=null?idempotencyKey: UUID.randomUUID().toString()).
                 paymentStatus(PaymentStatus.CREATED).
                 paymentMethod(request.paymentMethod()).
                 methodDetails(request.methodDetails()).
@@ -63,6 +64,12 @@ public class PaymentAuthorizationRecorder {
         payment= paymentRepository.save(payment);
         paymentTransitionService.apply(payment, PaymentEvent.AUTHORIZE_ATTEMPT);
         return payment;
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PaymentResponse> findExistingAttempt(UUID merchantId, String idempotencyKey) {
+        return paymentRepository.findByMerchantIdAndIdempotencyKey(merchantId, idempotencyKey)
+                .map(paymentMapper::toResponse);
     }
 
     @Transactional
